@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+What’s wrong with this code <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -334,7 +334,7 @@ const COINS = { BTC: ['#f7931a', '₿'] };
 const ADDRRULE = ['a Bitcoin address', /^(bc1[a-z0-9]{25,62}|[13][1-9A-HJ-NP-Za-km-z]{25,34})$/];
 
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const coin = c => { const k = COINS[c] || ['#667085', '?']; return `<span class="coin" style="background:${k[0]}">${k[1]}</span>` };
+const coin = c => { const k = COINS[c] || ['#667085', '?']; return <span class="coin" style="background:${k[0]}">${k[1]}</span> };
 const say = t => { $('live').textContent = ''; setTimeout(() => { $('live').textContent = t }, 40) };
 const fmtAmt = d => d.amount.toLocaleString(undefined, { maximumFractionDigits: DECIMALS[d.cur] || 8 });
 
@@ -496,7 +496,7 @@ function stepsView() {
     W + '<circle cx="12" cy="12" r="8"/><path d="M12 8v8M9.5 10h4a1.5 1.5 0 010 3h-3a1.5 1.5 0 000 3h4"/></svg>',
     W + '<path d="M3 8l9-5 9 5v8l-9 5-9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg>',
     W + '<circle cx="12" cy="12" r="9"/><path d="M8 12.5l3 3 5-6"/></svg>'];
-  return names.map((n, i) => `<div class="${on[i] ? 'done' : (i === cut ? 'cut' : '')}">${IC[i]}${esc(n)}</div>`).join('');
+  return names.map((n, i) => <div class="${on[i] ? 'done' : (i === cut ? 'cut' : '')}">${IC[i]}${esc(n)}</div>).join('');
 }
 
 async function render() {
@@ -507,7 +507,7 @@ async function render() {
   $('dAmt').innerHTML = coin(deal.cur) + esc(fmtAmt(deal) + ' ' + deal.cur);
   $('dTitle').textContent = deal.title;
   $('dMeta').style.wordBreak = 'break-all';
-  $('dMeta').innerHTML = `Deal ${esc(deal.id)}<br>Buyer: ${esc(deal.buyer)} · Seller: ${esc(deal.seller)} · Network: ${esc(deal.net)}<br>Escrow address: <b>${esc(deal.holder)}</b><br>Refund to: ${esc(deal.bAddr || '-')}<br>Payout to: ${esc(deal.sAddr || '-')}`;
+  $('dMeta').innerHTML = Deal ${esc(deal.id)}<br>Buyer: ${esc(deal.buyer)} · Seller: ${esc(deal.seller)} · Network: ${esc(deal.net)}<br>Escrow address: <b>${esc(deal.holder)}</b><br>Refund to: ${esc(deal.bAddr || '-')}<br>Payout to: ${esc(deal.sAddr || '-')};
   const cb = document.createElement('button');
   cb.type = 'button'; cb.className = 'cbtn'; cb.textContent = 'Copy address';
   cb.style.marginTop = '8px';
@@ -519,7 +519,7 @@ async function render() {
   const parts = [];
   for (const side of ['buyer', 'seller']) {
     const k = (deal.keys[side] || [])[(deal.keys[side] || []).length - 1];
-    parts.push(`<div class="note"><b>${NAME[side]}</b> signing key${side === role ? ' (yours)' : ''}</div><div class="kfp">${k ? esc(await fingerprint(k)) : 'not claimed yet'}</div>`);
+    parts.push(<div class="note"><b>${NAME[side]}</b> signing key${side === role ? ' (yours)' : ''}</div><div class="kfp">${k ? esc(await fingerprint(k)) : 'not claimed yet'}</div>);
   }
   const mine = (deal.keys[role] || []).length;
   const theirs = (deal.keys[role === 'buyer' ? 'seller' : 'buyer'] || []).length;
@@ -537,7 +537,7 @@ async function render() {
     $('acts').innerHTML = '<p class="note">This deal is closed.</p>';
   } else {
     const A = actions();
-    if (!A.length) $('acts').innerHTML = `<p class="note">Waiting on the ${role === 'buyer' ? 'seller' : 'buyer'}.</p>`;
+    if (!A.length) $('acts').innerHTML = <p class="note">Waiting on the ${role === 'buyer' ? 'seller' : 'buyer'}.</p>;
     A.forEach(([act, txt, cls]) => {
       const b = document.createElement('button');
       b.textContent = txt; b.className = cls;
@@ -677,7 +677,7 @@ $('copyHolder').onclick = () => copyBtn($('copyHolder'), $('holder').value.trim(
 $('cCode').onclick = () => copy(encCode(deal));
 $('cMsg').onclick = async () => {
   const fp = async side => { const k = (deal.keys[side] || [])[(deal.keys[side] || []).length - 1]; return k ? await fingerprint(k) : 'not claimed' };
-  copy(`Lukka Escrow deal “${deal.title}” (${deal.cur} ${deal.amount}). Status: ${LABEL[status()] || status()}.\nDeal ${deal.id} on ${deal.net}.\nBuyer key ${await fp('buyer')} · Seller key ${await fp('seller')}\n\nOpen the escrow page, choose “Open a deal code” and paste:\n${encCode(deal)}`);
+  copy(Lukka Escrow deal “${deal.title}” (${deal.cur} ${deal.amount}). Status: ${LABEL[status()] || status()}.\nDeal ${deal.id} on ${deal.net}.\nBuyer key ${await fp('buyer')} · Seller key ${await fp('seller')}\n\nOpen the escrow page, choose “Open a deal code” and paste:\n${encCode(deal)});
 };
 
 $('newer').onclick = () => {
