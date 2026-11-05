@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Lukka Escrow</title>
+<meta name="description" content="Agree on a Bitcoin deal, track every step, and keep a signed record. No account, no sign-up.">
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--tx:#14181f;--mut:#667085;--bd:#e3e6eb;--ac:#c2410c;--acx:#fff;--warn:#b54708;--bad:#b42318;--ink:#141a29}
+@media (prefers-color-scheme:dark){:root{--bg:#0f1318;--card:#181e26;--tx:#eef1f5;--mut:#98a2b3;--bd:#2a3340;--ac:#f7941e;--acx:#1a1204;--warn:#f79009;--bad:#f97066;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+main{position:relative;z-index:1;max-width:640px;margin:0 auto;padding:20px 16px 48px}
+h1{font-size:24px;margin:8px 0 2px;letter-spacing:-.01em}h2{font-size:17px;margin:0 0 12px}
+.sub{color:var(--mut);margin:0 0 18px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:16px;margin-bottom:14px}
+.tabs{display:flex;gap:8px;margin-bottom:14px}
+.tabs button{flex:1}
+label{display:block;font-size:13px;color:var(--mut);margin:10px 0 4px}
+input,select,textarea{width:100%;padding:11px 12px;border:1px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--tx);font:inherit}
+textarea{min-height:76px;resize:vertical}
+input[readonly]{border-style:dashed;cursor:default;color:var(--tx)}
+select[disabled]{opacity:1;color:var(--mut);border-style:dashed;cursor:default;background:var(--bg)}
+.row{display:flex;gap:10px}.row>*{flex:1}
+button{font:inherit;font-weight:600;padding:12px 14px;border-radius:10px;border:1px solid var(--bd);background:var(--card);color:var(--tx);cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+button.p{background:var(--ac);color:var(--acx);border-color:var(--ac)}
+button.d{color:var(--bad)}
+button.on{border-color:var(--ac);color:var(--ac)}
+button[disabled]{opacity:.5;cursor:not-allowed}
+.full{width:100%;margin-top:14px}
+.acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.acts button{flex:1 1 140px}
+.copyrow{display:flex;gap:8px}
+.copyrow input{flex:1;min-width:0}
+.copyrow button{flex:0 0 auto;padding:11px 14px;font-size:14px;white-space:nowrap}
+.badge{display:inline-block;padding:3px 10px;border-radius:99px;font-size:13px;font-weight:700;background:var(--bg);border:1px solid var(--bd)}
+.amt{font-size:30px;font-weight:800;margin:4px 0}
+.steps{display:flex;gap:6px;margin:12px 0}
+.steps div{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;font-size:12px;padding:6px 2px;border-radius:8px;background:var(--bg);color:var(--mut);border:1px solid var(--bd)}
+.steps .done{background:var(--ac);color:var(--acx);border-color:var(--ac)}
+.steps .cut{background:var(--warn);color:#fff;border-color:var(--warn)}
+.log{list-style:none;margin:0;padding:0}
+.log li{padding:8px 0;border-top:1px solid var(--bd);font-size:14px}
+.log li:first-child{border-top:0}.log small{color:var(--mut);display:block}
+.code{font:12px/1.4 ui-monospace,Menlo,Consolas,monospace;word-break:break-all;max-height:110px;overflow:auto}
+.note{font-size:13px;color:var(--mut)}
+.ok{color:var(--ac)}.bad{color:var(--bad)}.warn{color:var(--warn)}
+.hide{display:none}
+.err{font-size:13px;color:var(--bad);margin:4px 0 0}
+.err:empty{display:none}
+.hero{display:flex;align-items:center;gap:12px;margin:6px 0 4px}.hero h1{margin:0}
+.logo{flex:0 0 auto;border-radius:13px;display:block}
+.logo .bg{fill:var(--ink)}
+.logo .w{fill:#fff}.logo .o{fill:#f7941e}.logo .b{fill:#29abe2}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 14px}.chips span{font-size:12px;font-weight:600;padding:4px 10px;border-radius:99px;background:var(--card);border:1px solid var(--bd);color:var(--mut)}
+.fl{width:100%;height:auto;display:block;margin-bottom:8px}.fl .n{fill:var(--bg);stroke:var(--bd);stroke-width:2}.fl .e{fill:var(--bg);stroke:var(--ac);stroke-width:2.5}.fl .a{stroke:var(--ac);stroke-width:2.5;stroke-dasharray:6 5;fill:none;animation:dash 1.2s linear infinite}.fl .af{fill:var(--ac)}.fl .pf{fill:var(--mut)}.fl .lk{fill:var(--ac)}.fl .ks{fill:none;stroke:var(--ac);stroke-width:4;stroke-linecap:round}.fl text{fill:var(--tx);font:700 14px system-ui,sans-serif;text-anchor:middle}.fl text.m{fill:var(--mut);font-weight:500;font-size:12px}
+@keyframes dash{to{stroke-dashoffset:-22}}
+.coin{display:inline-flex;width:34px;height:34px;border-radius:50%;align-items:center;justify-content:center;color:#fff;font-size:18px;font-weight:800;vertical-align:middle;margin-right:6px}
+.sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.banner{border:1px solid var(--bad);border-radius:12px;padding:12px 14px;margin-bottom:14px;background:var(--card);font-size:14px}
+.kfp{font:12px/1.4 ui-monospace,Menlo,Consolas,monospace;word-break:break-all;background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:8px;margin-top:4px}
+.pill{display:inline-block;font-size:11px;font-weight:700;padding:1px 7px;border-radius:99px;border:1px solid var(--bd);background:var(--bg);color:var(--mut);vertical-align:middle;margin-left:6px}
+.pill.v{color:var(--ac);border-color:var(--ac)}
+.pill.x{color:var(--bad);border-color:var(--bad)}
+.item{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--bd)}
+.item:first-child{border-top:0}
+.item .grow{flex:1;min-width:0}
+.item .t{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.item button{flex:0 0 auto;padding:8px 12px;font-size:14px}
+
+/* background */
+#bg{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;
+-webkit-mask-image:radial-gradient(ellipse 100% 75% at 50% 32%,#000 25%,transparent 88%);
+mask-image:radial-gradient(ellipse 100% 75% at 50% 32%,#000 25%,transparent 88%)}
+#bg svg{position:absolute;left:50%;top:-1200px;width:900px;height:3600px;margin-left:-450px}
+#bg .s1{opacity:.55}
+#bg .s2{opacity:.2;width:1500px;height:6000px;margin-left:-750px;filter:blur(1.5px)}
+#bg .drift{animation:drift 130s linear infinite}
+#bg .d2{animation-duration:78s}
+#bg .blk rect{fill:var(--card);fill-opacity:.55;stroke:var(--ac);stroke-width:1.5;stroke-opacity:.55}
+#bg .blk path{stroke:var(--ac);stroke-width:1.4;stroke-opacity:.4;stroke-linecap:round}
+#bg .blk{animation:pulse 7s ease-in-out infinite}
+#bg .blk:nth-of-type(2n){animation-delay:-2.3s}
+#bg .blk:nth-of-type(3n){animation-delay:-4.6s}
+#bg .lnk{stroke:var(--ac);stroke-width:1.2;stroke-dasharray:5 8;fill:none;stroke-opacity:.32;animation:march 3.5s linear infinite}
+@keyframes drift{from{transform:translateY(0)}to{transform:translateY(-1200px)}}
+@keyframes march{to{stroke-dashoffset:-26}}
+@keyframes pulse{0%,100%{opacity:.55}50%{opacity:1}}
+@media (prefers-reduced-motion:reduce){
+#bg .drift,#bg .blk,#bg .lnk,.fl .a{animation:none}
+}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
+<g id="tile">
+<path class="lnk" d="M117 107L322 62"/><path class="lnk" d="M322 62L670 140"/><path class="lnk" d="M670 140L780 440"/>
+<path class="lnk" d="M174 344L546 326"/><path class="lnk" d="M546 326L709 729"/><path class="lnk" d="M88 628L403 583"/>
+<path class="lnk" d="M403 583L709 729"/><path class="lnk" d="M265 845L582 922"/><path class="lnk" d="M136 1066L450 1140"/>
+<path class="lnk" d="M450 1140L723 1103"/>
+<g class="blk"><rect x="90" y="80" width="54" height="54" rx="11"/><path d="M101 101h32M101 112h20"/></g>
+<g class="blk"><rect x="300" y="40" width="44" height="44" rx="10"/><path d="M309 57h26M309 66h16"/></g>
+<g class="blk"><rect x="640" y="110" width="60" height="60" rx="12"/><path d="M652 132h36M652 145h22"/></g>
+<g class="blk"><rect x="150" y="320" width="48" height="48" rx="10"/><path d="M159 338h30M159 349h18"/></g>
+<g class="blk"><rect x="520" y="300" width="52" height="52" rx="11"/><path d="M530 321h32M530 332h20"/></g>
+<g class="blk"><rect x="760" y="420" width="40" height="40" rx="9"/><path d="M768 435h24M768 444h15"/></g>
+<g class="blk"><rect x="60" y="600" width="56" height="56" rx="11"/><path d="M71 622h34M71 634h21"/></g>
+<g class="blk"><rect x="380" y="560" width="46" height="46" rx="10"/><path d="M389 578h28M389 588h17"/></g>
+<g class="blk"><rect x="680" y="700" width="58" height="58" rx="12"/><path d="M691 722h36M691 734h23"/></g>
+<g class="blk"><rect x="240" y="820" width="50" height="50" rx="10"/><path d="M249 840h32M249 851h19"/></g>
+<g class="blk"><rect x="560" y="900" width="44" height="44" rx="10"/><path d="M569 917h26M569 926h16"/></g>
+<g class="blk"><rect x="110" y="1040" width="52" height="52" rx="11"/><path d="M120 1061h32M120 1072h20"/></g>
+<g class="blk"><rect x="700" y="1080" width="46" height="46" rx="10"/><path d="M709 1098h28M709 1108h17"/></g>
+<g class="blk"><rect x="430" y="1120" width="40" height="40" rx="9"/><path d="M438 1135h24M438 1144h15"/></g>
+</g>
+</defs></svg>
+
+<div id="bg" aria-hidden="true">
+<svg class="s2" viewBox="0 0 900 1200" preserveAspectRatio="xMidYMin slice">
+<g class="drift d2"><use href="#tile"/><use href="#tile" y="1200"/><use href="#tile" y="2400"/></g>
+</svg>
+<svg class="s1" viewBox="0 0 900 1200" preserveAspectRatio="xMidYMin slice">
+<g class="drift"><use href="#tile"/><use href="#tile" y="1200"/><use href="#tile" y="2400"/></g>
+</svg>
+</div>
+
+<main>
+<div class="hero">
+<svg class="logo" viewBox="0 0 148 142" width="46" height="46" role="img" aria-label="Lukka">
+<rect class="bg" width="148" height="142" rx="28"/>
+<g transform="translate(9,14)">
+<circle class="w" cx="14" cy="26" r="11"/><circle class="w" cx="14" cy="52" r="11"/><circle class="w" cx="14" cy="78" r="11"/>
+<circle class="o" cx="40" cy="13" r="11"/><circle class="w" cx="40" cy="39" r="11"/><circle class="w" cx="40" cy="65" r="11"/><circle class="w" cx="40" cy="91" r="11"/>
+<circle class="b" cx="66" cy="0" r="11"/><circle class="o" cx="66" cy="26" r="11"/><circle class="w" cx="66" cy="52" r="11"/><circle class="o" cx="66" cy="78" r="11"/><circle class="w" cx="66" cy="104" r="11"/>
+<circle class="b" cx="92" cy="13" r="11"/><circle class="o" cx="92" cy="39" r="11"/><circle class="w" cx="92" cy="65" r="11"/><circle class="w" cx="92" cy="91" r="11"/>
+<circle class="b" cx="118" cy="26" r="11"/><circle class="w" cx="118" cy="52" r="11"/><circle class="b" cx="118" cy="78" r="11"/>
+</g>
+</svg>
+<h1>Lukka Escrow</h1></div>
+<p class="sub">Agree on a deal, track every step, and keep a signed record. No account, no sign-up, nothing stored on a server.</p>
+<div class="chips"><span>No sign-up</span><span>Non-custodial</span><span>Signed log</span><span>Key fingerprints</span></div>
+
+<p class="sr" id="live" aria-live="polite"></p>
+<div id="warnBox"></div>
+
+<div class="tabs" role="tablist" aria-label="Deal views">
+<button id="tNew" role="tab" aria-selected="true" aria-controls="vNew" class="on">New deal</button>
+<button id="tOpen" role="tab" aria-selected="false" aria-controls="vOpen">Open a deal code</button>
+<button id="tList" role="tab" aria-selected="false" aria-controls="vList">Saved (<span id="cnt">0</span>)</button>
+</div>
+
+<section id="vNew" class="card" role="tabpanel" aria-labelledby="tNew">
+<svg class="fl" viewBox="0 0 600 150" role="img" aria-label="Buyer sends bitcoin to the escrow address, seller delivers, then funds are released to the seller"><defs><marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="af" d="M0 0L10 5L0 10z"/></marker></defs><circle class="n" cx="80" cy="60" r="38"/><circle class="pf" cx="80" cy="50" r="10"/><path class="pf" d="M60 82q20-24 40 0z"/><rect class="e" x="258" y="22" width="84" height="76" rx="18"/><rect class="lk" x="285" y="56" width="30" height="24" rx="5"/><path class="ks" d="M291 56v-7a9 9 0 0118 0v7"/><circle class="n" cx="520" cy="60" r="38"/><circle class="pf" cx="520" cy="50" r="10"/><path class="pf" d="M500 82q20-24 40 0z"/><path class="a" d="M124 60H250" marker-end="url(#ar)"/><path class="a" d="M350 60H476" marker-end="url(#ar)"/><text x="187" y="48" class="m">1 · Pay</text><text x="413" y="48" class="m">2 · Release</text><text x="80" y="122">Buyer</text><text x="80" y="140" class="m">sends bitcoin</text><text x="300" y="122">Escrow address</text><text x="300" y="140" class="m">holds until both agree</text><text x="520" y="122">Seller</text><text x="520" y="140" class="m">delivers, gets paid</text></svg>
+<h2>Create a deal</h2>
+<label for="title">What is being bought or sold?</label>
+<input id="title" placeholder="e.g. Used camera, website design" maxlength="120">
+<p class="err" id="eTitle"></p>
+<div class="row">
+<div><label for="amount">Amount</label><input id="amount" type="number" inputmode="decimal" min="0" step="0.01" placeholder="250"><p class="err" id="eAmount"></p></div>
+<div><label for="cur">Asset (fixed)</label><select id="cur" disabled><option>BTC</option></select></div>
+</div>
+<div class="row">
+<div><label for="buyer">Buyer name</label><input id="buyer" placeholder="Buyer" maxlength="60"><p class="err" id="eBuyer"></p></div>
+<div><label for="seller">Seller name</label><input id="seller" placeholder="Seller" maxlength="60"><p class="err" id="eSeller"></p></div>
+</div>
+<label for="net">Network (fixed)</label>
+<select id="net" disabled><option selected>Bitcoin</option></select>
+<label for="holder">Escrow address</label>
+<div class="copyrow">
+<input id="holder" value="bc1qgw8smka9r9aak6c55x7dvnr7jnrlunjvka0n0u" readonly aria-readonly="true" autocapitalize="off" spellcheck="false">
+<button type="button" class="cbtn" id="copyHolder" aria-label="Copy escrow address">Copy</button>
+</div>
+<p class="note">Fixed by Lukka. Tap Copy, or paste it into your wallet. Always check it on a block explorer before sending.</p>
+<p class="err" id="eHolder"></p>
+<label for="bAddr">Buyer refund address</label>
+<input id="bAddr" placeholder="Where a refund goes" autocapitalize="off" spellcheck="false" maxlength="62">
+<p class="err" id="eBAddr"></p>
+<label for="sAddr">Seller payout address</label>
+<input id="sAddr" placeholder="Where released funds go" autocapitalize="off" spellcheck="false" maxlength="62">
+<p class="err" id="eSAddr"></p>
+<label for="terms">Terms: what counts as delivered, deadline, refund rules</label>
+<textarea id="terms" placeholder="Item ships within 3 days. Buyer has 48 hours to inspect…" maxlength="600"></textarea>
+<p class="note" id="termsCount">0 / 600</p>
+<label for="myRole">Which side are you?</label>
+<select id="myRole"><option value="buyer">Buyer</option><option value="seller">Seller</option></select>
+<button class="p full" id="create">Create deal</button>
+</section>
+
+<section id="vOpen" class="card hide" role="tabpanel" aria-labelledby="tOpen">
+<h2>Open a deal code</h2>
+<label for="paste">Paste the code you received</label>
+<textarea id="paste" placeholder="SH2…" autocapitalize="off" spellcheck="false"></textarea>
+<button class="p full" id="load">Open deal</button>
+<p id="loadErr" class="err" role="alert"></p>
+</section>
+
+<section id="vList" class="card hide" role="tabpanel" aria-labelledby="tList">
+<h2>Saved on this device</h2>
+<p class="note">Deals live in this browser only. Clearing site data deletes them, so keep a copy of the code for anything that matters.</p>
+<div id="list"></div>
+</section>
+
+<section id="vDeal" class="hide">
+<div id="keyBox"></div>
+
+<div class="card">
+<span class="badge" id="status"></span>
+<div class="amt" id="dAmt"></div>
+<div id="dTitle" style="font-weight:600"></div>
+<div class="note" id="dMeta"></div>
+<div class="steps" id="steps"></div>
+<div class="note" id="dTerms" style="white-space:pre-wrap"></div>
+</div>
+
+<div class="card">
+<h2>Your move</h2>
+<label id="roleLabel">I am the…</label>
+<div class="row" role="group" aria-labelledby="roleLabel"><button id="rB" class="on">Buyer</button><button id="rS">Seller</button></div>
+<p class="note" id="roleHint"></p>
+<label for="note">Transaction hash or note (optional)</label>
+<input id="note" placeholder="Paste the transaction hash when you send or release" autocapitalize="off" spellcheck="false" maxlength="160">
+<div class="acts" id="acts"></div>
+</div>
+
+<div class="card">
+<h2>Share the latest version</h2>
+<p class="note">Every update changes the code. Send the new code to the other person so you both hold the same record.</p>
+<div class="code card" id="code" style="margin:0"></div>
+<div class="acts"><button class="p" id="cCode">Copy code</button><button id="cMsg">Copy message</button></div>
+<p id="copied" class="ok note" aria-live="polite"></p>
+<p class="note" id="sizeNote"></p>
+</div>
+
+<div class="card">
+<h2>History <span class="note" id="integrity"></span></h2>
+<ul class="log" id="log"></ul>
+</div>
+
+<div class="card">
+<p class="note"><b>The page is non-custodial; the escrow address is not.</b> This page never holds, sees or moves crypto — it only records the agreement and each side's signed confirmations. Funds sit at the escrow address above, which is a single-key Bitcoin wallet, so whoever controls its key can move the funds. Nothing on this page can release them.</p>
+<p class="note"><b>What the signatures do and don't prove:</b> each entry is signed by the key of the party who made it, and the first entry signs the whole deal body, so editing a term, an address or an entry breaks verification. They do <i>not</i> prove the deal is genuine: someone can always build a fresh deal from scratch with new keys. So compare the two fingerprints below out of band, confirm the escrow address on a call or a different app, send a small test amount first, and verify every transaction hash on a block explorer. A hash is typed in by hand, so treat it as a pointer — open it and check the amount and the destination yourself.</p>
+<button class="full" id="newer">Start another deal</button>
+</div>
+</section>
+</main>
+
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const STORE = 'lukka:v1';
+const IDX = STORE + ':index';
+const KEYP = id => STORE + ':key:' + id;
+const ROLEP = id => STORE + ':role:' + id;
+const DEFAULT_HOLDER = 'bc1qgw8smka9r9aak6c55x7dvnr7jnrlunjvka0n0u';
+
+let deal = null, role = 'buyer', priv = null;
+let busy = false, saveWarned = false;
+
+const lsGet = (k, d) => { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v) } catch (e) { return d } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)) } catch (e) {} };
+const lsDel = k => { try { localStorage.removeItem(k) } catch (e) {} };
+
+const enc = new TextEncoder();
+const hasSubtle = !!(window.crypto && crypto.subtle);
+
+const b64u = s => btoa(unescape(encodeURIComponent(s))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+const unb64u = s => { let t = s.replace(/-/g, '+').replace(/_/g, '/').replace(/ /g, '+'); while (t.length % 4) t += '='; return decodeURIComponent(escape(atob(t))) };
+const b64uBytes = u8 => btoa(String.fromCharCode.apply(null, u8)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+const bytesB64u = s => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - s.length % 4) % 4)), c => c.charCodeAt(0));
+
+async function shaHex(s) {
+  const b = await crypto.subtle.digest('SHA-256', enc.encode(s));
+  return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join('');
+}
+
+const ALG = { name: 'ECDSA', namedCurve: 'P-256' };
+const SIGN = { name: 'ECDSA', hash: 'SHA-256' };
+const BODY = ['id', 'title', 'amount', 'cur', 'net', 'buyer', 'seller', 'holder', 'bAddr', 'sAddr', 'terms', 'created'];
+const bodyHash = d => shaHex(JSON.stringify(BODY.map(f => d[f])));
+const payload = (prev, t, who, kid, act, note, extra) => JSON.stringify([prev, t, who, kid, act, note, extra || '']);
+
+async function newKey() {
+  const kp = await crypto.subtle.generateKey(ALG, true, ['sign', 'verify']);
+  const privJwk = await crypto.subtle.exportKey('jwk', kp.privateKey);
+  const p = await crypto.subtle.exportKey('jwk', kp.publicKey);
+  return { priv: privJwk, pub: { kty: p.kty, crv: p.crv, x: p.x, y: p.y } };
+}
+async function doSign(privJwk, str) {
+  const k = await crypto.subtle.importKey('jwk', privJwk, ALG, true, ['sign']);
+  return b64uBytes(new Uint8Array(await crypto.subtle.sign(SIGN, k, enc.encode(str))));
+}
+async function doVerify(pubJwk, str, sig) {
+  try {
+    const k = await crypto.subtle.importKey('jwk', pubJwk, ALG, true, ['verify']);
+    return await crypto.subtle.verify(SIGN, k, bytesB64u(sig), enc.encode(str));
+  } catch (e) { return false }
+}
+async function fingerprint(jwk) { const h = await shaHex(jwk.x + '|' + jwk.y); return h.slice(0, 4) + '-' + h.slice(4, 8) + '-' + h.slice(8, 12) }
+
+const encCode = d => 'SH2' + b64u(JSON.stringify(d));
+
+function decCode(raw) {
+  const s = String(raw || '').trim().replace(/\s+/g, '');
+  if (!/^SH2/i.test(s)) throw new Error('That code doesn’t start with SH2. Paste the whole code.');
+  if (s.length > 200000) throw new Error('That code is unusually long. Check you pasted the right one.');
+  let d;
+  try { d = JSON.parse(unb64u(s.slice(3))) } catch (e) { throw new Error('That code is damaged. Paste it again from the start, with no line breaks missing.') }
+  if (!d || typeof d !== 'object') throw new Error('That code is empty.');
+  if (!Array.isArray(d.log) || !d.log.length) throw new Error('That code has no history in it.');
+  if (typeof d.id !== 'string' || !d.id) throw new Error('That code has no deal id.');
+  if (typeof d.amount !== 'number' || !isFinite(d.amount) || d.amount <= 0) throw new Error('That code has a bad amount.');
+  if (!d.keys || typeof d.keys !== 'object') d.keys = { buyer: [], seller: [] };
+  if (!Array.isArray(d.keys.buyer)) d.keys.buyer = [];
+  if (!Array.isArray(d.keys.seller)) d.keys.seller = [];
+  if (typeof d.body !== 'string') d.body = '';
+  d.log = d.log.filter(e => e && typeof e === 'object').map(e => ({
+    t: String(e.t || ''), who: e.who === 'seller' ? 'seller' : 'buyer',
+    kid: Number.isInteger(e.kid) ? e.kid : 0, act: String(e.act || ''),
+    note: String(e.note || ''), h: String(e.h || ''), sig: String(e.sig || '')
+  }));
+  if (!d.log.length) throw new Error('That code has no usable history in it.');
+  if (d.log.length > 500) throw new Error('That code has too many entries. Start a fresh deal.');
+  return d;
+}
+
+const LABEL = { created: 'Created', funded: 'Funded', delivered: 'Delivered', released: 'Released to seller', refunded: 'Refunded to buyer', cancelled: 'Cancelled', disputed: 'In dispute' };
+const LOGTXT = { created: 'created the deal', funded: 'confirmed the bitcoin was sent to the escrow address', delivered: 'marked the item or work as delivered', released: 'approved release of funds to the seller', refunded: 'confirmed funds refunded to the buyer', cancelled: 'cancelled the deal', disputed: 'opened a dispute', rekey: 'claimed a new signing key' };
+const TERMINAL = ['released', 'refunded', 'cancelled'];
+const NAME = { buyer: 'Buyer', seller: 'Seller' };
+
+const DECIMALS = { BTC: 8 };
+const COINS = { BTC: ['#f7931a', '₿'] };
+const ADDRRULE = ['a Bitcoin address', /^(bc1[a-z0-9]{25,62}|[13][1-9A-HJ-NP-Za-km-z]{25,34})$/];
+
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const coin = c => { const k = COINS[c] || ['#667085', '?']; return `<span class="coin" style="background:${k[0]}">${k[1]}</span>` };
+const say = t => { $('live').textContent = ''; setTimeout(() => { $('live').textContent = t }, 40) };
+const fmtAmt = d => d.amount.toLocaleString(undefined, { maximumFractionDigits: DECIMALS[d.cur] || 8 });
+
+function status() {
+  if (!deal) return 'created';
+  for (let i = deal.log.length - 1; i >= 0; i--) if (deal.log[i].act !== 'rekey') return deal.log[i].act;
+  return 'created';
+}
+
+/* ---------- storage ---------- */
+function index() { const a = lsGet(IDX, []); return Array.isArray(a) ? a : [] }
+function saveDeal() {
+  if (!deal) return;
+  try { localStorage.setItem(STORE + ':deal:' + deal.id, JSON.stringify(deal)) }
+  catch (e) {
+    if (!saveWarned) {
+      saveWarned = true;
+      alert('This browser is out of storage for this site. That step was not saved — copy the code now before you close the page.');
+    }
+  }
+  const a = index();
+  if (a.indexOf(deal.id) < 0) { a.unshift(deal.id); lsSet(IDX, a) }
+  paintCount();
+}
+function dropDeal(id) {
+  lsDel(STORE + ':deal:' + id); lsDel(KEYP(id) + ':buyer'); lsDel(KEYP(id) + ':seller'); lsDel(ROLEP(id));
+  lsSet(IDX, index().filter(x => x !== id)); paintCount();
+}
+function paintCount() { $('cnt').textContent = index().length }
+
+/* ---------- views ---------- */
+function show(v) {
+  ['vNew', 'vOpen', 'vList', 'vDeal'].forEach(x => $(x).classList.toggle('hide', x !== v));
+  const map = { vNew: 'tNew', vOpen: 'tOpen', vList: 'tList', vDeal: null };
+  ['tNew', 'tOpen', 'tList'].forEach(id => {
+    const on = map[v] === id;
+    $(id).classList.toggle('on', on);
+    $(id).setAttribute('aria-selected', on ? 'true' : 'false');
+  });
+  if (v === 'vList') renderList();
+}
+
+/* ---------- list ---------- */
+function renderList() {
+  const ids = index();
+  if (!ids.length) { $('list').innerHTML = '<p class="note">No saved deals yet.</p>'; return }
+  const rows = ids.map(id => {
+    const d = lsGet(STORE + ':deal:' + id, null);
+    if (!d || !Array.isArray(d.log) || !d.log.length) return '';
+    const s = d.log[d.log.length - 1].act;
+    return `<div class="item"><div class="grow"><div class="t">${esc(d.title || 'Untitled')}</div>
+    <div class="note">${esc(fmtAmt(d))} ${esc(d.cur)} · <span class="${TERMINAL.includes(s) ? '' : 'ok'}">${esc(LABEL[s] || s)}</span></div></div>
+    <button data-open="${esc(d.id)}">Open</button><button class="d" data-drop="${esc(d.id)}" aria-label="Delete ${esc(d.title || 'deal')}">×</button></div>`;
+  }).join('');
+  $('list').innerHTML = rows || '<p class="note">No saved deals yet.</p>';
+  $('list').querySelectorAll('[data-open]').forEach(b => b.onclick = () => openDeal(lsGet(STORE + ':deal:' + b.dataset.open, null)));
+  $('list').querySelectorAll('[data-drop]').forEach(b => b.onclick = () => {
+    const d = lsGet(STORE + ':deal:' + b.dataset.drop, null);
+    if (confirm('Delete “' + (d ? d.title : 'this deal') + '” from this device? The code will stop working here.')) {
+      if (deal && deal.id === b.dataset.drop) { deal = null; priv = null; show('vNew') }
+      dropDeal(b.dataset.drop); renderList(); say('Deal deleted.');
+    }
+  });
+}
+
+/* ---------- log ---------- */
+async function addLog(act, note) {
+  const kid = (deal.keys[role] || []).length - 1;
+  if (kid < 0) throw new Error('No key for this side yet.');
+  const prev = deal.log.length ? deal.log[deal.log.length - 1].h : '0';
+  const t = new Date().toISOString();
+  const extra = deal.log.length ? '' : deal.body;
+  const p = payload(prev, t, role, kid, act, note || '', extra);
+  const e = { t, who: role, kid, act, note: note || '', h: await shaHex(p) };
+  e.sig = await doSign(priv, p);
+  deal.log.push(e);
+  saveDeal();
+}
+
+async function verify(d) {
+  const bad = [];
+  if (!hasSubtle) return { bad, all: false };
+  if (await bodyHash(d) !== d.body) bad.push(-1);
+  let prev = '0';
+  for (let i = 0; i < d.log.length; i++) {
+    const e = d.log[i];
+    const extra = i === 0 ? d.body : '';
+    const p = payload(prev, e.t, e.who, e.kid, e.act, e.note, extra);
+    const key = (d.keys[e.who] || [])[e.kid];
+    const hOk = await shaHex(p) === e.h;
+    const sOk = key ? await doVerify(key, p, e.sig) : false;
+    if (!hOk || !sOk) bad.push(i);
+    prev = e.h;
+  }
+  return { bad, all: true };
+}
+
+function relation(a, b) {
+  const n = Math.min(a.length, b.length);
+  for (let i = 0; i < n; i++) if (a[i].h !== b[i].h) return 'fork';
+  if (a.length === b.length) return 'same';
+  return a.length < b.length ? 'behind' : 'ahead';
+}
+
+/* ---------- role / keys ---------- */
+async function claimRole(next) {
+  role = next;
+  lsSet(ROLEP(deal.id), role);
+  let stored = lsGet(KEYP(deal.id) + ':' + role, null);
+  deal.keys[role] = deal.keys[role] || [];
+  const current = deal.keys[role][deal.keys[role].length - 1];
+  const currentFp = current ? await fingerprint(current) : null;
+  if (!stored) {
+    const k = await newKey();
+    stored = k.priv;
+    lsSet(KEYP(deal.id) + ':' + role, stored);
+    const newFp = await fingerprint(k.pub);
+    if (currentFp !== newFp) {
+      deal.keys[role].push(k.pub);
+      if (current) await addLog('rekey', 'new key ' + newFp + ' replaced ' + currentFp);
+    }
+  }
+  priv = stored;
+  saveDeal();
+}
+
+/* ---------- actions ---------- */
+function actions() {
+  const s = status(), b = role === 'buyer', A = [];
+  if (s === 'created') {
+    if (b) A.push(['funded', 'I have sent the bitcoin', 'p']);
+    A.push(['cancelled', 'Cancel deal', 'd']);
+  } else if (s === 'funded') {
+    if (!b) A.push(['delivered', 'I have delivered', 'p']);
+    A.push(['disputed', 'Open dispute', 'd']);
+  } else if (s === 'delivered') {
+    if (b) A.push(['released', 'Approve & release funds', 'p']);
+    A.push(['disputed', 'Open dispute', 'd']);
+  } else if (s === 'disputed') {
+    A.push(['released', 'We agree: release to seller', 'p']);
+    A.push(['refunded', 'We agree: refund buyer', 'p']);
+  }
+  return A;
+}
+
+/* ---------- render ---------- */
+function stepsView() {
+  const acts = new Set(deal.log.map(e => e.act)), s = status();
+  const funded = acts.has('funded') ? 1 : 0, delivered = acts.has('delivered') ? 1 : 0;
+  let on, last = 'Settled', cut = -1;
+  if (s === 'released') on = [1, 1, 1, 1];
+  else if (s === 'refunded') { on = [1, funded, 0, 1]; last = 'Refunded'; cut = 2 }
+  else if (s === 'cancelled') { on = [1, 0, 0, 0]; last = 'Cancelled'; cut = 1 }
+  else if (s === 'disputed') { on = [1, funded, delivered, 0]; cut = 3 }
+  else on = [1, funded, delivered, 0];
+  const names = ['Created', 'Funded', 'Delivered', last];
+  const W = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">';
+  const IC = [W + '<path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4"/></svg>',
+    W + '<circle cx="12" cy="12" r="8"/><path d="M12 8v8M9.5 10h4a1.5 1.5 0 010 3h-3a1.5 1.5 0 000 3h4"/></svg>',
+    W + '<path d="M3 8l9-5 9 5v8l-9 5-9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg>',
+    W + '<circle cx="12" cy="12" r="9"/><path d="M8 12.5l3 3 5-6"/></svg>'];
+  return names.map((n, i) => `<div class="${on[i] ? 'done' : (i === cut ? 'cut' : '')}">${IC[i]}${esc(n)}</div>`).join('');
+}
+
+async function render() {
+  if (!deal) return;
+  const s = status(), closed = TERMINAL.includes(s);
+  $('status').textContent = LABEL[s] || s;
+  $('status').style.color = ({ released: 'var(--ac)', funded: 'var(--ac)', delivered: 'var(--ac)', disputed: 'var(--warn)', refunded: 'var(--warn)', cancelled: 'var(--bad)' })[s] || '';
+  $('dAmt').innerHTML = coin(deal.cur) + esc(fmtAmt(deal) + ' ' + deal.cur);
+  $('dTitle').textContent = deal.title;
+  $('dMeta').style.wordBreak = 'break-all';
+  $('dMeta').innerHTML = `Deal ${esc(deal.id)}<br>Buyer: ${esc(deal.buyer)} · Seller: ${esc(deal.seller)} · Network: ${esc(deal.net)}<br>Escrow address: <b>${esc(deal.holder)}</b><br>Refund to: ${esc(deal.bAddr || '-')}<br>Payout to: ${esc(deal.sAddr || '-')}`;
+  const cb = document.createElement('button');
+  cb.type = 'button'; cb.className = 'cbtn'; cb.textContent = 'Copy address';
+  cb.style.marginTop = '8px';
+  cb.onclick = () => copyBtn(cb, deal.holder);
+  $('dMeta').appendChild(cb);
+  $('dTerms').textContent = deal.terms ? 'Terms: ' + deal.terms : '';
+  $('steps').innerHTML = stepsView();
+
+  const parts = [];
+  for (const side of ['buyer', 'seller']) {
+    const k = (deal.keys[side] || [])[(deal.keys[side] || []).length - 1];
+    parts.push(`<div class="note"><b>${NAME[side]}</b> signing key${side === role ? ' (yours)' : ''}</div><div class="kfp">${k ? esc(await fingerprint(k)) : 'not claimed yet'}</div>`);
+  }
+  const mine = (deal.keys[role] || []).length;
+  const theirs = (deal.keys[role === 'buyer' ? 'seller' : 'buyer'] || []).length;
+  $('keyBox').innerHTML = `<div class="card"><h2>Signing keys</h2>
+    <p class="note">Compare these two fingerprints with the other person on a call or a different app. If a fingerprint changes mid-deal, that side re-claimed on another device.</p>
+    ${parts.join('')}</div>`;
+
+  $('rB').className = role === 'buyer' ? 'on' : '';
+  $('rS').className = role === 'seller' ? 'on' : '';
+  $('roleHint').textContent = !mine ? 'Pick your side to create a signing key.'
+    : !priv ? 'No signing key for this side on this device. Tap your side above to create one.'
+      : !theirs ? 'The other side has not opened this code yet, so they have no key on record.' : '';
+  $('acts').innerHTML = '';
+  if (closed) {
+    $('acts').innerHTML = '<p class="note">This deal is closed.</p>';
+  } else {
+    const A = actions();
+    if (!A.length) $('acts').innerHTML = `<p class="note">Waiting on the ${role === 'buyer' ? 'seller' : 'buyer'}.</p>`;
+    A.forEach(([act, txt, cls]) => {
+      const b = document.createElement('button');
+      b.textContent = txt; b.className = cls;
+      if (!mine || !priv) b.disabled = true;
+      b.onclick = async () => {
+        if (busy) return; busy = true;
+        const needConfirm = ['disputed', 'cancelled', 'refunded', 'released'].includes(act);
+        if (needConfirm && !confirm(txt + '?')) { busy = false; return }
+        try {
+          await addLog(act, $('note').value.trim());
+          $('note').value = '';
+          say(LABEL[act] + ' recorded.');
+          await render();
+        } catch (e) { alert(e.message || 'Could not record that step.'); say('Step failed.') }
+        busy = false;
+      };
+      $('acts').appendChild(b);
+    });
+  }
+
+  const code = encCode(deal);
+  $('code').textContent = code;
+  $('sizeNote').textContent = code.length.toLocaleString() + ' characters · ' + deal.log.length + ' entries' + (deal.log.length >= 80 ? ' · long code, start a fresh deal if this gets unwieldy' : '');
+  $('copied').textContent = '';
+
+  const v = await verify(deal);
+  const badCount = v.bad.length;
+  $('integrity').innerHTML = !hasSubtle ? '<span class="warn">signing unavailable</span>'
+    : badCount === 0 ? '<span class="ok">✓ ' + deal.log.length + ' entries signed and intact</span>'
+      : '<span class="bad">⚠ ' + badCount + ' problem' + (badCount === 1 ? '' : 's') + '</span>';
+  $('log').innerHTML = deal.log.slice().reverse().map(e => {
+    const i = deal.log.indexOf(e), bad = v.bad.includes(i) || v.bad.includes(-1);
+    return `<li>${bad ? '<span class="pill x">⚠ unverified</span>' : '<span class="pill v">✓ signed</span>'}
+      <b>${esc(NAME[e.who] || e.who)}</b> ${esc(LOGTXT[e.act] || e.act)}${e.note ? ': ' + esc(e.note) : ''}
+      <small>${esc(new Date(e.t).toLocaleString())} · ${esc(String(e.who).slice(0, 1).toUpperCase())}${e.kid} · ref ${esc(String(e.h).slice(0, 8))}</small></li>`;
+  }).join('');
+}
+
+/* ---------- open ---------- */
+async function openDeal(d) {
+  if (!d) return;
+  deal = d;
+  saveDeal();
+  const remembered = lsGet(ROLEP(d.id), null);
+  const fallback = (d.keys.buyer || []).length && !(d.keys.seller || []).length ? 'seller'
+    : (d.keys.seller || []).length && !(d.keys.buyer || []).length ? 'buyer' : 'buyer';
+  role = remembered || fallback;
+  const stored = lsGet(KEYP(d.id) + ':' + role, null);
+  priv = stored;
+  if (!stored && !(d.keys[role] || []).length && hasSubtle) {
+    await claimRole(role);
+  }
+  show('vDeal');
+  await render();
+  say('Deal ' + d.id + ' open.');
+}
+
+$('tNew').onclick = () => show('vNew');
+$('tOpen').onclick = () => show('vOpen');
+$('tList').onclick = () => show('vList');
+
+$('cur').onchange = () => { const d = DECIMALS[$('cur').value] || 8; $('amount').step = (Math.pow(10, -d)).toFixed(d) };
+$('cur').onchange();
+$('terms').oninput = () => { $('termsCount').textContent = $('terms').value.length + ' / 600' };
+
+$('rB').onclick = async () => { if (role === 'buyer' && priv) return; if (deal) { await claimRole('buyer'); await render(); say('You are now the buyer.') } };
+$('rS').onclick = async () => { if (role === 'seller' && priv) return; if (deal) { await claimRole('seller'); await render(); say('You are now the seller.') } };
+
+function bad(id, msg) { $(id).textContent = msg || ''; return !msg }
+
+$('create').onclick = async () => {
+  if (!hasSubtle) { alert('This browser cannot sign records here. Open the page over https or localhost.'); return }
+  const title = $('title').value.trim(), amount = parseFloat($('amount').value);
+  const buyer = $('buyer').value.trim(), seller = $('seller').value.trim();
+  const net = $('net').value, holder = $('holder').value.trim();
+  const bAddr = $('bAddr').value.trim(), sAddr = $('sAddr').value.trim();
+  const rule = ADDRRULE;
+  let ok = true;
+  ok = bad('eTitle', title ? '' : 'Give the deal a title.') && ok;
+  ok = bad('eAmount', amount > 0 ? '' : 'Enter an amount above zero.') && ok;
+  ok = bad('eBuyer', buyer ? '' : 'Name the buyer.') && ok;
+  ok = bad('eSeller', seller ? '' : 'Name the seller.') && ok;
+  ok = bad('eHolder', rule[1].test(holder) ? '' : 'That is not ' + rule[0] + '.') && ok;
+  ok = bad('eBAddr', rule[1].test(bAddr) ? '' : 'That is not ' + rule[0] + '.') && ok;
+  ok = bad('eSAddr', rule[1].test(sAddr) ? '' : 'That is not ' + rule[0] + '.') && ok;
+  if (!ok) { say('Some fields need fixing.'); $('title').scrollIntoView({ block: 'center' }); return }
+
+  const d = {
+    id: Math.random().toString(36).slice(2, 8).toUpperCase(),
+    title, amount, cur: $('cur').value, net, buyer, seller, holder, bAddr, sAddr,
+    terms: $('terms').value.trim(), created: new Date().toISOString(),
+    keys: { buyer: [], seller: [] }, body: '', log: []
+  };
+  d.body = await bodyHash(d);
+  role = $('myRole').value;
+  deal = d;
+  saveWarned = false;
+  await claimRole(role);
+  await addLog('created', '');
+  saveDeal();
+  show('vDeal');
+  await render();
+  say('Deal created. Copy the code and send it to the other side.');
+};
+
+$('load').onclick = async () => {
+  $('loadErr').textContent = '';
+  let d;
+  try { d = decCode($('paste').value) } catch (e) { $('loadErr').textContent = e.message; return }
+  const local = lsGet(STORE + ':deal:' + d.id, null);
+  if (local && Array.isArray(local.log) && local.log.length) {
+    const rel = relation(d.log, local.log);
+    if (rel === 'behind') {
+      if (!confirm('This code is behind the copy saved here. Opening it drops the newer steps unless you have sent them on. Continue?')) return;
+    } else if (rel === 'fork') {
+      if (!confirm('This code has diverged from the copy saved here — both sides recorded different steps. Opening it replaces your copy, so copy your current code first if you want to keep it. Continue?')) return;
+    }
+  }
+  const v = await verify(d);
+  $('paste').value = '';
+  await openDeal(d);
+  if (v.bad.length) say('Opened, but ' + v.bad.length + ' entries did not verify.');
+};
+
+async function copy(t) {
+  try { await navigator.clipboard.writeText(t); $('copied').textContent = 'Copied.'; say('Copied.') }
+  catch (e) { $('copied').textContent = 'Copy failed. Select the code above and copy it by hand.' }
+}
+async function copyBtn(btn, text) {
+  const old = btn.textContent;
+  if (!text) { btn.textContent = 'Empty'; setTimeout(() => btn.textContent = old, 1200); return }
+  try { await navigator.clipboard.writeText(text); btn.textContent = 'Copied'; say('Address copied.') }
+  catch (e) { btn.textContent = 'Copy failed' }
+  setTimeout(() => btn.textContent = old, 1400);
+}
+$('copyHolder').onclick = () => copyBtn($('copyHolder'), $('holder').value.trim());
+$('cCode').onclick = () => copy(encCode(deal));
+$('cMsg').onclick = async () => {
+  const fp = async side => { const k = (deal.keys[side] || [])[(deal.keys[side] || []).length - 1]; return k ? await fingerprint(k) : 'not claimed' };
+  copy(`Lukka Escrow deal “${deal.title}” (${deal.cur} ${deal.amount}). Status: ${LABEL[status()] || status()}.\nDeal ${deal.id} on ${deal.net}.\nBuyer key ${await fp('buyer')} · Seller key ${await fp('seller')}\n\nOpen the escrow page, choose “Open a deal code” and paste:\n${encCode(deal)}`);
+};
+
+$('newer').onclick = () => {
+  ['title', 'amount', 'buyer', 'seller', 'bAddr', 'sAddr', 'terms', 'note', 'paste'].forEach(i => { $(i).value = '' });
+  ['eTitle', 'eAmount', 'eBuyer', 'eSeller', 'eHolder', 'eBAddr', 'eSAddr', 'loadErr'].forEach(i => { $(i).textContent = '' });
+  $('termsCount').textContent = '0 / 600';
+  $('holder').value = DEFAULT_HOLDER;
+  $('net').value = 'Bitcoin';
+  $('cur').selectedIndex = 0; $('myRole').selectedIndex = 0;
+  $('cur').onchange();
+  deal = null; priv = null; saveWarned = false;
+  show('vNew');
+  say('Ready for a new deal.');
+};
+
+/* ---------- boot ---------- */
+(function boot() {
+  paintCount();
+  $('holder').value = DEFAULT_HOLDER;
+  $('net').value = 'Bitcoin';
+  if (!hasSubtle) {
+    $('warnBox').innerHTML = '<div class="banner"><b>Signing is unavailable.</b> This browser will not let the page use its crypto engine here. Serve the file over https or from localhost and reload. You can still read deals, but new steps cannot be signed.</div>';
+    $('create').disabled = true;
+  }
+  if (!window.isSecureContext && hasSubtle) {
+    $('warnBox').innerHTML = '<div class="banner"><b>Not a secure context.</b> Signing may fail silently. Serve the file over https or from localhost.</div>';
+  }
+  show('vNew');
+})();
+</script>
+</body>
+</html>
